@@ -1,0 +1,33 @@
+<resources>
+    <string name="app_name">VegaNG</string>
+    <string name="test_connectivity">Test Connectivity</string>
+    <string name="copy_config">Copy Config</string>
+    <string name="delete_config">Delete Config</string>
+    <string name="share_config">Share Config</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting</string>
+    <string name="shield_icon">Shield Icon</string>
+    <string name="server_download_traffic">Server Download Traffic</string>
+    <string name="servers">%1$d servers</string>
+    <string name="server_upload_traffic">Server Upload Traffic</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="unknown_error">Unknown Error</string>
+    <string name="config_copied">Config copied</string>
+    <string name="copy_failed">Copy failed</string>
+    <string name="delete_failed">Delete failed</string>
+    <string name="share_failed">Share failed</string>
+    <string name="get">Get</string>
+    <string name="test">Test</string>
+    <string name="sort">Sort</string>
+    <string name="clean">Clean</string>
+    <string name="server">Server</string>
+    <string name="port">Port</string>
+    <string name="sni">Sni</string>
+    <string name="copy">Copy</string>
+    <string name="delete">Delete</string>
+    <string name="share">Share</string>
+    <string name="empty_state_title">No configs yet</string>
+    <string name="empty_state_message">Tap the button below to fetch servers</string>
+    <string name="empty_state_button">Get Configs</string>
+</resources>

@@ -1,0 +1,111 @@
+package com.v2ray.ang.fmt
+
+
+import com.kian.mahmoudi.vegang.dto.ProfileItem
+import com.kian.mahmoudi.vegang.enums.EConfigType
+import com.kian.mahmoudi.vegang.enums.NetworkType
+import com.kian.mahmoudi.vegang.extention.idnHost
+import com.kian.mahmoudi.vegang.extention.isNotNullEmpty
+import com.kian.mahmoudi.vegang.extention.nullIfBlank
+import com.kian.mahmoudi.vegang.fmt.FmtBase
+import com.kian.mahmoudi.vegang.util.Constants
+import com.kian.mahmoudi.vegang.util.Utils
+import java.net.URI
+
+object Hysteria2Fmt : FmtBase() {
+    /**
+     * Parses a Hysteria2 URI string into a ProfileItem object.
+     *
+     * @param str the Hysteria2 URI string to parse
+     * @return the parsed ProfileItem object, or null if parsing fails
+     */
+    fun parse(str: String): ProfileItem {
+        val config = ProfileItem.create(EConfigType.HYSTERIA2)
+
+        val uri = URI(Utils.fixIllegalUrl(str))
+        config.remarks = Utils.decodeURIComponent(uri.fragment.orEmpty()).let { it.ifEmpty { "none" } }
+        config.server = uri.idnHost
+        config.serverPort = uri.port.toString()
+        config.password = uri.userInfo
+        config.security = Constants.TLS
+        config.network = NetworkType.HYSTERIA.type
+
+        if (!uri.rawQuery.isNullOrEmpty()) {
+            val queryParam = getQueryParam(uri)
+
+            getItemFormQuery(config, queryParam)
+
+            config.security = queryParam["security"] ?: Constants.TLS
+            config.obfsPassword = queryParam["obfs-password"]
+            config.portHopping = queryParam["mport"]
+            if (config.portHopping.isNotNullEmpty()) {
+                config.portHoppingInterval = queryParam["mportHopInt"]
+            }
+            config.pinnedCA256 = queryParam["pinSHA256"]
+
+        }
+
+        return config
+    }
+
+    /**
+     * Converts a ProfileItem object to a URI string.
+     *
+     * @param config the ProfileItem object to convert
+     * @return the converted URI string
+     */
+    fun toUri(config: ProfileItem): String {
+        val dicQuery = HashMap<String, String>()
+
+        config.security.let { if (it != null) dicQuery["security"] = it }
+        config.sni?.nullIfBlank()?.let { dicQuery["sni"] = it }
+        config.alpn?.nullIfBlank()?.let { dicQuery["alpn"] = it }
+        config.insecure.let { dicQuery["insecure"] = if (it == true) "1" else "0" }
+
+        if (config.obfsPassword.isNotNullEmpty()) {
+            dicQuery["obfs"] = "salamander"
+            dicQuery["obfs-password"] = config.obfsPassword.orEmpty()
+        }
+        if (config.portHopping.isNotNullEmpty()) {
+            dicQuery["mport"] = config.portHopping.orEmpty()
+        }
+        if (config.portHoppingInterval.isNotNullEmpty()) {
+            val rawInterval = config.portHoppingInterval?.trim().nullIfBlank()
+            val interval = if (rawInterval == null) {
+                null
+            } else {
+                val singleValue = rawInterval.toIntOrNull()
+                if (singleValue != null) {
+                    if (singleValue < 5) {
+                        null
+                    } else {
+                        rawInterval
+                    }
+                } else {
+                    val parts = rawInterval.split('-')
+                    if (parts.size == 2) {
+                        val start = parts[0].trim().toIntOrNull()
+                        val end = parts[1].trim().toIntOrNull()
+                        if (start != null && end != null) {
+                            val minStart = maxOf(5, start)
+                            val minEnd = maxOf(minStart, end)
+                            (minStart + minEnd) / 2
+                        } else {
+                            null
+                        }
+                    } else {
+                        null
+                    }
+                }
+            }
+            if (interval != null) {
+                dicQuery["mportHopInt"] = interval.toString()
+            }
+        }
+        if (config.pinnedCA256.isNotNullEmpty()) {
+            dicQuery["pinSHA256"] = config.pinnedCA256.orEmpty()
+        }
+
+        return toUri(config, config.password, dicQuery)
+    }
+}

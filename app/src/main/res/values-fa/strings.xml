@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VegaNG</string>
+    <string name="test_connectivity">تست اتصال</string>
+    <string name="copy_config">کپی کانفیگ</string>
+    <string name="delete_config">حذف کانفیگ</string>
+    <string name="share_config">اشتراک گذاری کانفیگ</string>
+    <string name="disconnected">عدم اتصال</string>
+    <string name="connected">متصل</string>
+    <string name="connecting">درحال اتصال</string>
+    <string name="shield_icon">ایکون سپر</string>
+    <string name="server_download_traffic">ترافیک دانلود سرور</string>
+    <string name="servers">%1$d سرور</string>
+    <string name="server_upload_traffic">ترافیک آپلود سرور</string>
+    <string name="disconnect">قطع اتصال</string>
+    <string name="unknown_error">ارور ناشناخته</string>
+    <string name="config_copied">کانفیگ کپی شد</string>
+    <string name="copy_failed">مشکلی در کپی کردن به وجود امد</string>
+    <string name="delete_failed">مشکلی در حذف کردن به وجود امد</string>
+    <string name="share_failed">مشکلی در اشتراک گزاری به وجود امد</string>
+    <string name="get">گرفتن</string>
+    <string name="test">تست</string>
+    <string name="sort">مرتب کردن</string>
+    <string name="clean">پاکسازی</string>
+    <string name="server">سرور</string>
+    <string name="port">پورت</string>
+    <string name="sni">Sni</string>
+    <string name="copy">کپی</string>
+    <string name="delete">دیلیت</string>
+    <string name="share">اشتراک گزاری</string>
+    <string name="empty_state_title">هنوز کانفیگی نیست</string>
+    <string name="empty_state_message">برای دریافت سرورها، دکمه زیر را بزن</string>
+    <string name="empty_state_button">دریافت کانفیگ</string>
+</resources>
