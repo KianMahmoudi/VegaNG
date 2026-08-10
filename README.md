@@ -26,12 +26,15 @@ VegaNG is a modern, high-performance VPN application that leverages the V2Ray co
 ---
 ## 🖼️ Screenshots
 
-| Light | Dark |
-|:-----:|:----:|
-| ![Home](screenshots/home_light.jpg) | ![Home](screenshots/home_dark.jpg) |
-| ![Configs](screenshots/configs_light.jpg) | ![Configs](screenshots/configs_dark.jpg) |
-| ![Connected](screenshots/connected_light.jpg) | ![Connected](screenshots/connected_dark.jpg) |
----
+<p align="center">
+  <img src="screenshots/home_light.jpg" width="150" title="Home Light">
+  <img src="screenshots/home_dark.jpg" width="150" title="Home Dark">
+  <img src="screenshots/configs_light.jpg" width="150" title="Configs Light">
+  <img src="screenshots/configs_dark.jpg" width="150" title="Configs Dark">
+  <img src="screenshots/connected_light.jpg" width="150" title="Connected Light">
+  <img src="screenshots/connected_dark.jpg" width="150" title="Connected Dark">
+</p>
+
 ## 📥 Installation
 
 Download the latest APK from [Releases](https://github.com/KianMahmoudi/VegaNG/releases).
