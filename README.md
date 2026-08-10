@@ -28,9 +28,9 @@ VegaNG is a modern, high-performance VPN application that leverages the V2Ray co
 
 | Light | Dark |
 |:-----:|:----:|
-| ![Home](screenshots/home_light.png) | ![Home](screenshots/home_dark.png) |
-| ![Configs](screenshots/configs_light.png) | ![Configs](screenshots/configs_dark.png) |
-| ![Connected](screenshots/connected_light.png) | ![Connected](screenshots/connected_dark.png) |
+| ![Home](screenshots/home_light.jpg) | ![Home](screenshots/home_dark.jpg) |
+| ![Configs](screenshots/configs_light.jpg) | ![Configs](screenshots/configs_dark.jpg) |
+| ![Connected](screenshots/connected_light.jpg) | ![Connected](screenshots/connected_dark.jpg) |
 ---
 ## 📥 Installation
 
