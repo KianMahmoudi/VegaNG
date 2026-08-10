@@ -11,9 +11,12 @@ VegaNG is a modern, high-performance VPN application that leverages the V2Ray co
 [![Min SDK](https://img.shields.io/badge/Min%20SDK-24-orange?style=for-the-badge)](https://developer.android.com)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 
+[**فارسی**](README-fa.md)
+
 </div>
 
 ---
+
 ## ✨ Features
 
 | ⚡ Performance | 🎨 Design |
@@ -24,14 +27,20 @@ VegaNG is a modern, high-performance VPN application that leverages the V2Ray co
 | 🔒 Stable & secure V2Ray core | 🌓 Light & Dark theme support |
 
 ---
+
 ## 🖼️ Screenshots
 
-| Light | Dark |
-|:-----:|:----:|
-| ![Home](screenshots/home_light.png) | ![Home](screenshots/home_dark.png) |
-| ![Configs](screenshots/configs_light.png) | ![Configs](screenshots/configs_dark.png) |
-| ![Connected](screenshots/connected_light.png) | ![Connected](screenshots/connected_dark.png) |
+<p align="center">
+  <img src="screenshots/home_light.jpg" width="150" title="Home Light">
+  <img src="screenshots/home_dark.jpg" width="150" title="Home Dark">
+  <img src="screenshots/configs_light.jpg" width="150" title="Configs Light">
+  <img src="screenshots/configs_dark.jpg" width="150" title="Configs Dark">
+  <img src="screenshots/connected_light.jpg" width="150" title="Connected Light">
+  <img src="screenshots/connected_dark.jpg" width="150" title="Connected Dark">
+</p>
+
 ---
+
 ## 📥 Installation
 
 Download the latest APK from [Releases](https://github.com/KianMahmoudi/VegaNG/releases).
@@ -39,6 +48,7 @@ Download the latest APK from [Releases](https://github.com/KianMahmoudi/VegaNG/r
 > **Note:** Since the app is not published on Google Play, Android will prompt you to allow installation from unknown sources. Simply enable it for this install.
 
 ---
+
 ## 🚀 Quick Start
 
 ```
@@ -50,6 +60,7 @@ Download the latest APK from [Releases](https://github.com/KianMahmoudi/VegaNG/r
 ```
 
 ---
+
 ## 🛠️ Build from Source
 
 **Prerequisites:** Android Studio · JDK 17+ · Android SDK 35
@@ -63,10 +74,15 @@ git clone https://github.com/KianMahmoudi/VegaNG.git
 
 # Build a release APK
 ./gradlew assembleRelease
+```
 
-# APK output:
+APK output:
+
+```
 app/build/outputs/apk/{debug,release}/app-{debug,release}.apk
 ```
+
+---
 
 ## 🏗️ Architecture
 
@@ -91,12 +107,14 @@ Built with a clean **MVVM** architecture:
 └───────────────────────────────────┘
 ```
 
-## Tech stack
- - Language: Kotlin
- - UI: Jetpack Compose + Material 3
- - Architecture: MVVM + Repository pattern
- - DI: Hilt
- - Database: Room
- - VPN Core: libv2ray + tun2socks
- - Async: Coroutines + Flow
 ---
+
+## Tech stack
+
+- **Language:** Kotlin
+- **UI:** Jetpack Compose + Material 3
+- **Architecture:** MVVM + Repository pattern
+- **DI:** Hilt
+- **Database:** Room
+- **VPN Core:** libv2ray + tun2socks
+- **Async:** Coroutines + Flow
