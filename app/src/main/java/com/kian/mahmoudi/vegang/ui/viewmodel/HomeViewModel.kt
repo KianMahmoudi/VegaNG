@@ -34,7 +34,8 @@ import javax.inject.Inject
 data class HomeUiState(
     val configs: List<ProfileItem> = emptyList(),
     val errorMessage: String? = null,
-    val loading: Boolean = false
+    val loading: Boolean = false,
+    val configLoading: Boolean = false
 )
 
 sealed interface HomeUiEvent {
@@ -86,16 +87,17 @@ class HomeViewModel @Inject constructor(
 
     fun getConfigs(count: Int) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(loading = true)
+            _uiState.value = _uiState.value.copy(loading = true, configLoading = true)
             try {
                 configRepository.getConfigs(count)
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     loading = false,
+                    configLoading = false,
                     errorMessage = e.message ?: context.getString(R.string.unknown_error)
                 )
             } finally {
-                _uiState.value = _uiState.value.copy(loading = false)
+                _uiState.value = _uiState.value.copy(loading = false, configLoading = false)
             }
         }
     }

@@ -30,4 +30,5 @@
     <string name="empty_state_title">No configs yet</string>
     <string name="empty_state_message">Tap the button below to fetch servers</string>
     <string name="empty_state_button">Get Configs</string>
+    <string name="loading_configs">Getting configs, please be patient...</string>
 </resources>

@@ -43,8 +43,8 @@ class ConfigProvider {
             "https://raw.githubusercontent.com/VOID-Anonymity/V.O.I.D-VPN_Bypass/refs/heads/main/url_work.txt"
         )
 
-        private const val MAX_TCP_PING_THREADS = 50
-        private const val MAX_REAL_PING_THREADS = 15
+        private const val MAX_TCP_PING_THREADS = 250
+        private const val MAX_REAL_PING_THREADS = 40
     }
 
     val client = OkHttpClient()

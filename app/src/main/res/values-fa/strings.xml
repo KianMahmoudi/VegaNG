@@ -31,4 +31,5 @@
     <string name="empty_state_title">هنوز کانفیگی نیست</string>
     <string name="empty_state_message">برای دریافت سرورها، دکمه زیر را بزن</string>
     <string name="empty_state_button">دریافت کانفیگ</string>
+    <string name="loading_configs">در حال دریافت کانفیگ‌ها... لطفا صبور باشید</string>
 </resources>

@@ -133,7 +133,10 @@ fun ConfigCard(
 private fun LatencyTag(ms: Long?) {
     val m = ms ?: return
     val c = when {
-        m < 100 -> Color(0xFF4CAF50); m < 250 -> Color(0xFFFF9800); else -> Color(0xFFF44336)
+        m <= 0 -> Color(0xFF9E9E9E)
+        m < 500 -> Color(0xFF4CAF50)
+        m < 1000 -> Color(0xFFFF9800)
+        else -> Color(0xFFF44336)
     }
     Row(verticalAlignment = Alignment.CenterVertically) {
         Box(
