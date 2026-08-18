@@ -32,4 +32,7 @@
     <string name="empty_state_message">برای دریافت سرورها، دکمه زیر را بزن</string>
     <string name="empty_state_button">دریافت کانفیگ</string>
     <string name="loading_configs">در حال دریافت کانفیگ‌ها... لطفا صبور باشید</string>
+    <string name="select_server">انتخاب سرور</string>
+    <string name="connect">اتصال</string>
+    <string name="no_server_selected">سروری انتخاب نشده است</string>
 </resources>

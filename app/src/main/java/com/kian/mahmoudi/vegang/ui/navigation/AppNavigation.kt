@@ -68,7 +68,6 @@ fun HomeRoute(homeViewModel: HomeViewModel = hiltViewModel()) {
         uiState = uiState,
         vpnState = vpnState,
         traffic = traffic,
-        onConnect = { homeViewModel.connect(it) },
         onDisconnect = { homeViewModel.disconnect() },
         onGetConfigs = { homeViewModel.getConfigs(10) },
         onTestLatency = { homeViewModel.testConfig(it) },
@@ -77,7 +76,9 @@ fun HomeRoute(homeViewModel: HomeViewModel = hiltViewModel()) {
         onDeleteConfig = { homeViewModel.deleteConfig(it) },
         onCopyConfig = { homeViewModel.copyToClipboard(it) },
         onDeleteNonWorking = { homeViewModel.deleteNonWorkingConfigs() },
-        onShareConfig = { homeViewModel.shareConfig(it) }
+        onShareConfig = { homeViewModel.shareConfig(it) },
+        onSelectConfig = { homeViewModel.selectConfig(it) },
+        onConnectSelected = { homeViewModel.connectSelected() },
     )
 
 }

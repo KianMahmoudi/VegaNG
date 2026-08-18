@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.Shield
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Button
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,6 +37,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -59,7 +61,8 @@ fun HomeScreen(
     uiState: HomeUiState,
     vpnState: VpnState,
     traffic: TrafficInfo,
-    onConnect: (ProfileItem) -> Unit,
+    onSelectConfig: (ProfileItem) -> Unit,
+    onConnectSelected: () -> Unit,
     onDisconnect: () -> Unit,
     onGetConfigs: () -> Unit,
     onTestLatency: (ProfileItem) -> Unit,
@@ -78,83 +81,70 @@ fun HomeScreen(
         ) {
             ConnectionStatusBar(
                 vpnState,
-                traffic.upload,
-                traffic.download,
-                uiState.configs.size,
-                onDisconnect = onDisconnect
+                trafficUp = traffic.upload,
+                trafficDown = traffic.download,
+                duration = traffic.duration,
+                serverCount = uiState.configs.size,
             )
-            Box(modifier = Modifier.weight(1f)) {
-                Column(modifier = Modifier.fillMaxSize()) {
 
-                    if (uiState.configLoading) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
-                        ) {
-                            LinearProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(R.string.loading_configs),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-
-                    if (uiState.loading && !uiState.configLoading) {
-                        LinearProgressIndicator(
-                            modifier = Modifier.fillMaxWidth(),
-                            color = MaterialTheme.colorScheme.primary,
-                            trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-                        )
-                    }
-
-                    if (!uiState.loading && uiState.configs.isEmpty()) {
-                        EmptyState(onGetConfigs, Modifier.weight(1f))
-                    } else {
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            items(uiState.configs) { config ->
-                                Log.d("MainActivity", "Json Config: $config")
-                                ConfigCard(
-                                    config,
-                                    onConnect = { onConnect(it) },
-                                    latencyMs = if (config.latency == 0L) null else config.latency,
-                                    onTest = {
-                                        onTestLatency(config)
-                                    },
-                                    onCopy = { onCopyConfig(config) },
-                                    onDelete = { onDeleteConfig(config) },
-                                    onShare = { onShareConfig(config) }
-                                )
-                            }
-                        }
-                        ActionBar(
-                            onGetConfigs = onGetConfigs,
-                            onTestAll = onTestLatencyAll,
-                            onSort = onSortConfigs,
-                            onDeleteFailed = onDeleteNonWorking,
-                            loading = uiState.loading,
-                            modifier = Modifier
-                        )
-                    }
-
-                }
-                if (uiState.loading && uiState.configs.isEmpty()) {
-                    Box(
+            if (uiState.configs.isEmpty()) {
+                EmptyState(
+                    onGetConfigs = onGetConfigs,
+                    modifier = Modifier.weight(1f),
+                    isLoading = uiState.loading || uiState.configLoading,
+                )
+            } else {
+                if ((uiState.loading || uiState.configLoading) && uiState.configs.isNotEmpty()) {
+                    LinearProgressIndicator(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(40.dp)
-                        )
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 2.dp),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                ConnectButton(
+                    vpnState = vpnState,
+                    selectedConfig = uiState.selectedConfig,
+                    onConnectClick = onConnectSelected,
+                    onDisconnectClick = onDisconnect
+                )
+
+                Box(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Column() {
+                            if (uiState.configLoading) {
+                                FetchingConfigsBanner()
+                            }
+                            LazyColumn(modifier = Modifier.weight(1f)) {
+                                items(uiState.configs) { config ->
+                                    Log.d("MainActivity", "Json Config: $config")
+                                    ConfigCard(
+                                        config,
+                                        onConnect = { onSelectConfig(it) },
+                                        isSelected = (config == uiState.selectedConfig),
+                                        latencyMs = if (config.latency == 0L) null else config.latency,
+                                        onTest = {
+                                            onTestLatency(config)
+                                        },
+                                        onCopy = { onCopyConfig(config) },
+                                        onDelete = { onDeleteConfig(config) },
+                                        onShare = { onShareConfig(config) }
+                                    )
+                                }
+                            }
+                            ActionBar(
+                                onGetConfigs = onGetConfigs,
+                                onTestAll = onTestLatencyAll,
+                                onSort = onSortConfigs,
+                                onDeleteFailed = onDeleteNonWorking,
+                                loading = uiState.loading,
+                                modifier = Modifier
+                            )
+                        }
                     }
                 }
             }
@@ -167,11 +157,10 @@ fun HomeScreen(
 fun ConnectionStatusBar(
     vpnState: VpnState,
     trafficUp: String,
+    duration: String,
     trafficDown: String,
-    serverCount: Int,
-    onDisconnect: () -> Unit
+    serverCount: Int
 ) {
-
     val color = vpnStateAccent(vpnState)
     val text = stringResource(vpnState.text)
 
@@ -184,8 +173,7 @@ fun ConnectionStatusBar(
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
@@ -194,18 +182,14 @@ fun ConnectionStatusBar(
                         .clip(CircleShape)
                         .background(color)
                 )
-
                 Spacer(Modifier.width(10.dp))
-
                 Icon(
                     imageVector = Icons.Rounded.Shield,
                     tint = color.copy(alpha = 0.8f),
                     modifier = Modifier.size(20.dp),
-                    contentDescription = stringResource(R.string.shield_icon)
+                    contentDescription = null
                 )
-
                 Spacer(Modifier.width(8.dp))
-
                 Text(
                     text = text,
                     style = MaterialTheme.typography.titleMedium,
@@ -213,18 +197,14 @@ fun ConnectionStatusBar(
                     color = color,
                     modifier = Modifier.weight(1f)
                 )
-                IconButton(onClick = onDisconnect, enabled = vpnState != VpnState.DISCONNECTED) {
-                    Icon(
-                        imageVector = Icons.Rounded.Cancel,
-                        contentDescription = stringResource(R.string.disconnect),
-                        tint = if (vpnState != VpnState.DISCONNECTED) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            Color.Transparent
-                        }
+                if (vpnState == VpnState.CONNECTED) {
+                    Text(
+                        text = duration,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
-
             }
 
             Spacer(Modifier.height(8.dp))
@@ -232,17 +212,16 @@ fun ConnectionStatusBar(
             Spacer(Modifier.height(8.dp))
 
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Icon(
                     modifier = Modifier.size(14.dp),
                     imageVector = Icons.Rounded.ArrowDownward,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    contentDescription = stringResource(R.string.server_download_traffic)
+                    contentDescription = null
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(4.dp))
                 Text(text = trafficDown, style = MaterialTheme.typography.labelSmall)
 
                 Spacer(Modifier.weight(1f))
@@ -251,9 +230,9 @@ fun ConnectionStatusBar(
                     modifier = Modifier.size(14.dp),
                     imageVector = Icons.Rounded.ArrowUpward,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    contentDescription = stringResource(R.string.server_upload_traffic)
+                    contentDescription = null
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(4.dp))
                 Text(text = trafficUp, style = MaterialTheme.typography.labelSmall)
 
                 Spacer(Modifier.weight(1f))
@@ -264,12 +243,12 @@ fun ConnectionStatusBar(
                 )
             }
         }
-
     }
 }
 
 @Composable
 fun EmptyState(
+    isLoading: Boolean,
     onGetConfigs: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -301,8 +280,24 @@ fun EmptyState(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onGetConfigs) {
-            Text(stringResource(R.string.empty_state_button))
+
+        Button(
+            onClick = onGetConfigs,
+            enabled = !isLoading
+        ) {
+            if (isLoading) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.loading_configs))
+                }
+            } else {
+                Text(stringResource(R.string.empty_state_button))
+            }
         }
     }
 }
@@ -384,6 +379,132 @@ fun ActionChip(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+fun ConnectButton(
+    vpnState: VpnState,
+    selectedConfig: ProfileItem?,
+    onConnectClick: () -> Unit,
+    onDisconnectClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val accentColor = vpnStateAccent(vpnState)
+    val isEnabled = selectedConfig != null || vpnState != VpnState.DISCONNECTED
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+
+        // دکمه دایره‌ای بزرگ (140dp)
+        OutlinedCard(
+            onClick = {
+                if (vpnState == VpnState.DISCONNECTED) {
+                    onConnectClick()
+                } else {
+                    onDisconnectClick()
+                }
+            },
+            enabled = isEnabled,
+            shape = CircleShape,
+            border = BorderStroke(
+                width = 4.dp,
+                color = if (isEnabled) accentColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)
+            ),
+            modifier = Modifier.size(140.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(
+                        if (vpnState == VpnState.CONNECTED) accentColor.copy(alpha = 0.15f)
+                        else Color.Transparent
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (vpnState == VpnState.CONNECTING) {
+                    CircularProgressIndicator(
+                        color = accentColor,
+                        modifier = Modifier.size(48.dp),
+                        strokeWidth = 4.dp
+                    )
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Rounded.Shield,
+                            contentDescription = null,
+                            tint = if (isEnabled) accentColor else MaterialTheme.colorScheme.outline.copy(
+                                alpha = 0.35f
+                            ),
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            text = when (vpnState) {
+                                VpnState.DISCONNECTED -> if (selectedConfig == null) stringResource(
+                                    R.string.select_server
+                                ) else stringResource(R.string.connect)
+
+                                VpnState.CONNECTING -> stringResource(R.string.connecting)
+                                VpnState.CONNECTED -> stringResource(R.string.disconnect)
+                            },
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isEnabled) accentColor else MaterialTheme.colorScheme.outline.copy(
+                                alpha = 0.4f
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // نمایش نام سرور انتخاب شده
+        Text(
+            text = selectedConfig?.remarks?.ifEmpty { stringResource(R.string.no_server_selected) }
+                ?: stringResource(R.string.no_server_selected),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (selectedConfig != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun FetchingConfigsBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                color = MaterialTheme.colorScheme.primary,
+                strokeWidth = 2.dp
+            )
+            Spacer(Modifier.width(10.dp))
+            Text(
+                text = stringResource(R.string.loading_configs),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Medium
             )
         }
     }

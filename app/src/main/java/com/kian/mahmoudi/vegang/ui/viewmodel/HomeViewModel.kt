@@ -33,13 +33,14 @@ import javax.inject.Inject
 
 data class HomeUiState(
     val configs: List<ProfileItem> = emptyList(),
+    val selectedConfig: ProfileItem? = null,
     val errorMessage: String? = null,
     val loading: Boolean = false,
     val configLoading: Boolean = false
 )
 
 sealed interface HomeUiEvent {
-    data class LaunchVpnPermission(val config: String,val configName: String) : HomeUiEvent
+    data class LaunchVpnPermission(val config: String, val configName: String) : HomeUiEvent
 }
 
 @HiltViewModel
@@ -108,7 +109,7 @@ class HomeViewModel @Inject constructor(
             vpnRepository.connect(json, config.remarks)
         } else {
             viewModelScope.launch {
-                _event.emit(HomeUiEvent.LaunchVpnPermission(json,config.remarks))
+                _event.emit(HomeUiEvent.LaunchVpnPermission(json, config.remarks))
             }
         }
     }
@@ -149,6 +150,15 @@ class HomeViewModel @Inject constructor(
                 ).show()
             }
         }
+    }
+
+    fun selectConfig(config: ProfileItem) {
+        _uiState.value = _uiState.value.copy(selectedConfig = config)
+    }
+
+    fun connectSelected() {
+        val config = _uiState.value.selectedConfig ?: return
+        connect(config)
     }
 
     fun shareConfig(config: ProfileItem) {

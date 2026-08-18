@@ -133,6 +133,13 @@ public class V2rayController {
         context.sendBroadcast(stop_intent);
     }
 
+    public static void queryServiceState(final Context context) {
+        Intent query_intent = new Intent(V2RAY_SERVICE_COMMAND_INTENT);
+        query_intent.setPackage(context.getPackageName());
+        query_intent.putExtra(V2RAY_SERVICE_COMMAND_EXTRA, V2rayConstants.SERVICE_COMMANDS.QUERY_STATE);
+        context.sendBroadcast(query_intent);
+    }
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     public static void getConnectedV2rayServerDelay(final Context context, final LatencyDelayListener latencyDelayCallback) {
         if (getConnectionState() != V2rayConstants.CONNECTION_STATES.CONNECTED) {

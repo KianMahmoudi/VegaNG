@@ -1,6 +1,7 @@
 package dev.dev7.lib.v2ray.services;
 
 import static android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE;
+import static dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_COMMAND_INTENT;
 import static dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_OPENED_APPLICATION_INTENT;
 
 import android.annotation.SuppressLint;
@@ -65,10 +66,10 @@ public class NotificationService {
                 notificationChannelID = createNotificationChannelID(targetService, applicationName);
             }
         }
-        Intent disconnectIntent = new Intent(targetService, targetService.getClass());
+        Intent disconnectIntent = new Intent(V2RAY_SERVICE_COMMAND_INTENT);
         disconnectIntent.setPackage(targetService.getPackageName());
         disconnectIntent.putExtra(V2rayConstants.V2RAY_SERVICE_COMMAND_EXTRA, V2rayConstants.SERVICE_COMMANDS.STOP_SERVICE);
-        PendingIntent disconnectPendingIntent = PendingIntent.getService(targetService, 0, disconnectIntent, judgeForNotificationFlag());
+        PendingIntent disconnectPendingIntent = PendingIntent.getBroadcast(targetService, 0, disconnectIntent, judgeForNotificationFlag());
         notifcationBuilder = new NotificationCompat.Builder(targetService, notificationChannelID);
         notifcationBuilder.setContentTitle(applicationName + " Connecting...")
                 .setSmallIcon(android.R.drawable.sym_def_app_icon)

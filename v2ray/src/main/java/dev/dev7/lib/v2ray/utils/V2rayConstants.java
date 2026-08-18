@@ -29,7 +29,8 @@ public class V2rayConstants {
     public enum SERVICE_COMMANDS {
         START_SERVICE,
         STOP_SERVICE,
-        MEASURE_DELAY
+        MEASURE_DELAY,
+        QUERY_STATE
     }
 
     public enum CONNECTION_STATES {

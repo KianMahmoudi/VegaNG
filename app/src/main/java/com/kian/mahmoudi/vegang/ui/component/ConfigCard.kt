@@ -1,5 +1,6 @@
 package com.kian.mahmoudi.vegang.ui.component
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Share
@@ -43,19 +45,32 @@ import com.kian.mahmoudi.vegang.dto.ProfileItem
 fun ConfigCard(
     config: ProfileItem,
     latencyMs: Long? = null,
+    isSelected: Boolean = false,
     onConnect: (ProfileItem) -> Unit,
     onTest: () -> Unit = {},
     onCopy: () -> Unit = {},
     onDelete: () -> Unit = {},
     onShare: () -> Unit = {},
 ) {
+
+    val primaryColor = MaterialTheme.colorScheme.primary
+
     OutlinedCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .clickable { onConnect(config) },
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) primaryColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+        ),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (isSelected) primaryColor.copy(alpha = 0.08f) else MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 2.dp else 0.dp
+        ),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // ── Row 1: Name + Latency + Protocol ──
@@ -63,6 +78,17 @@ fun ConfigCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = "Selected",
+                        tint = primaryColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+
                 Text(
                     text = config.remarks.ifBlank { "Unnamed" },
                     style = MaterialTheme.typography.bodyLarge,

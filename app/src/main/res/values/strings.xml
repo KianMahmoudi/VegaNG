@@ -31,4 +31,7 @@
     <string name="empty_state_message">Tap the button below to fetch servers</string>
     <string name="empty_state_button">Get Configs</string>
     <string name="loading_configs">Getting configs, please be patient...</string>
+    <string name="select_server">Select a Server</string>
+    <string name="connect">Connect</string>
+    <string name="no_server_selected">No server selected</string>
 </resources>

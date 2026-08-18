@@ -12,6 +12,7 @@ import dev.dev7.lib.v2ray.V2rayController
 import dev.dev7.lib.v2ray.utils.V2rayConstants
 import dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_CONNECTION_STATE_BROADCAST_EXTRA
 import dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_DOWNLOAD_TRAFFIC_BROADCAST_EXTRA
+import dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_DURATION_BROADCAST_EXTRA
 import dev.dev7.lib.v2ray.utils.V2rayConstants.SERVICE_UPLOAD_TRAFFIC_BROADCAST_EXTRA
 import dev.dev7.lib.v2ray.utils.V2rayConstants.V2RAY_SERVICE_STATICS_BROADCAST_INTENT
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,8 +37,9 @@ class VpnRepositoryImpl @Inject constructor(@ApplicationContext private val cont
                     p1.getStringExtra(SERVICE_DOWNLOAD_TRAFFIC_BROADCAST_EXTRA) ?: "0 B"
                 val trafficUpload =
                     p1.getStringExtra(SERVICE_UPLOAD_TRAFFIC_BROADCAST_EXTRA) ?: "0 B"
+                val duration = p1.getStringExtra(SERVICE_DURATION_BROADCAST_EXTRA) ?: "00:00:00"
 
-                _traffic.value = TrafficInfo(trafficDownload, trafficUpload)
+                _traffic.value = TrafficInfo(trafficDownload, trafficUpload, duration)
 
 
                 val connectionState = p1.getSerializableExtra(
@@ -68,13 +70,15 @@ class VpnRepositoryImpl @Inject constructor(@ApplicationContext private val cont
             context,
             broadcastReceiver,
             IntentFilter(V2RAY_SERVICE_STATICS_BROADCAST_INTENT),
-            ContextCompat.RECEIVER_NOT_EXPORTED
+            ContextCompat.RECEIVER_EXPORTED
         )
+        V2rayController.queryServiceState(context)
     }
 
 
     override fun connect(config: String, configName: String) {
         _state.value = VpnState.CONNECTING
+        // Start V2Ray with monitoring - use lifecycle scope
         V2rayController.StartV2ray(
             context,
             configName,
@@ -84,7 +88,9 @@ class VpnRepositoryImpl @Inject constructor(@ApplicationContext private val cont
     }
 
     override fun stop() {
+        // Force stop V2Ray and reset state immediately
         V2rayController.stopV2ray(context)
+        _state.value = VpnState.DISCONNECTED
     }
 
     override fun isPrepared(): Boolean {
