@@ -140,13 +140,29 @@ class HomeViewModel @Inject constructor(
     }
 
     fun deleteConfig(config: ProfileItem) {
+        val isCurrentlyConnected = vpnState.value != VpnState.DISCONNECTED &&
+                uiState.value.selectedConfig?.id == config.id
+
+        if (isCurrentlyConnected) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.cannot_delete_connected_config),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
         viewModelScope.launch {
             try {
+                if (uiState.value.selectedConfig?.id == config.id) {
+                    _uiState.value = _uiState.value.copy(selectedConfig = null)
+                }
                 configRepository.deleteConfig(config)
             } catch (e: Exception) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.delete_failed), Toast.LENGTH_SHORT
+                    context.getString(R.string.delete_failed),
+                    Toast.LENGTH_SHORT
                 ).show()
             }
         }

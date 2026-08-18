@@ -34,4 +34,5 @@
     <string name="select_server">Select a Server</string>
     <string name="connect">Connect</string>
     <string name="no_server_selected">No server selected</string>
+    <string name="cannot_delete_connected_config">Cannot delete active connected config. Please disconnect first.</string>
 </resources>

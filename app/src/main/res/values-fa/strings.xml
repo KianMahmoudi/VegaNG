@@ -35,4 +35,5 @@
     <string name="select_server">انتخاب سرور</string>
     <string name="connect">اتصال</string>
     <string name="no_server_selected">سروری انتخاب نشده است</string>
+    <string name="cannot_delete_connected_config">امکان حذف کانفیگ در حال استفاده وجود ندارد. ابتدا اتصال را قطع کنید.</string>
 </resources>
