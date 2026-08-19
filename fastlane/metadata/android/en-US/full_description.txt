@@ -1,0 +1,9 @@
+VegaNG is a modern, high-performance VPN application that leverages the V2Ray core to deliver fast and reliable connections.
+
+Features:
+• Material 3 UI built with Jetpack Compose
+• Single and batch latency testing
+• Auto-sort configs by lowest ping
+• One-tap cleanup of non-working configs
+• Light and Dark theme support
+• English and Farsi (RTL) localization
