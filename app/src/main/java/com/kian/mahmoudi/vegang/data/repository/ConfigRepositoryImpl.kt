@@ -3,6 +3,7 @@ package com.kian.mahmoudi.vegang.data.repository
 import com.kian.mahmoudi.vegang.dto.ProfileItem
 import com.kian.mahmoudi.vegang.data.config.ConfigProvider
 import com.kian.mahmoudi.vegang.data.config.ConfigTester
+import com.kian.mahmoudi.vegang.data.config.GeoLocator
 import com.kian.mahmoudi.vegang.data.database.dao.ConfigDao
 import com.kian.mahmoudi.vegang.data.database.mapper.ConfigMapper
 import com.kian.mahmoudi.vegang.enums.ConfigSort
@@ -31,7 +32,12 @@ class ConfigRepositoryImpl @Inject constructor(
                 config.path
             )
         })
-        val entities = configMapper.toEntityList(remoteConfigs)
+
+        val addresses = remoteConfigs.map { it.server ?: "" }
+        val locations = GeoLocator.locateServers(addresses)
+        val finalConfigs = GeoLocator.buildLocationRemarks(remoteConfigs, locations)
+
+        val entities = configMapper.toEntityList(finalConfigs)
         configDao.upsertConfigs(entities)
     }
 

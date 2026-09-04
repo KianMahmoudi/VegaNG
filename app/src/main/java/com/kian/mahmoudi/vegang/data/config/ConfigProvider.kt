@@ -2,6 +2,8 @@ package com.kian.mahmoudi.vegang.data.config
 
 import android.util.Log
 import com.kian.mahmoudi.vegang.dto.ProfileItem
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
@@ -14,6 +16,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
 data class TestResult(
     val passed: List<ProfileItem>,
@@ -43,62 +46,54 @@ class ConfigProvider {
             "https://raw.githubusercontent.com/VOID-Anonymity/V.O.I.D-VPN_Bypass/refs/heads/main/url_work.txt"
         )
 
-        private const val MAX_TCP_PING_THREADS = 250
-        private const val MAX_REAL_PING_THREADS = 40
+        private const val MAX_TCP_PING_THREADS = 100
     }
 
-    val client = OkHttpClient()
+    val client = OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
 
     suspend fun getConfigs(
         count: Int,
         isDuplicate: suspend (ProfileItem) -> Boolean
     ): List<ProfileItem> {
-        val configs = mutableListOf<ProfileItem>()
+
+        val minTarget = maxOf(count, 5)
+
+        val allConfigs = getConfigsFromSources()
+            .filterNot { isDuplicate(it) }
+            .shuffled()
+
+        if (allConfigs.isEmpty()) return emptyList()
+        Log.d(TAG, "Total unique configs from sources: ${allConfigs.size}")
+
         val finalConfigs = mutableListOf<ProfileItem>()
-        val tcpConfigs = mutableListOf<ProfileItem>()
-        val tcpFailed = mutableSetOf<ProfileItem>()
-        val realFailed = mutableSetOf<ProfileItem>()
+        var untested = allConfigs
+        var tcpPassed = mutableListOf<ProfileItem>()
 
-        while (finalConfigs.size < count) {
-            if (configs.isEmpty()) {
-                val newConfigs = getConfigsFromSources()
-                    .filterNot { it in tcpFailed || it in realFailed || it in tcpConfigs || it in finalConfigs }
 
-                if (newConfigs.isEmpty()) break
+        var attempt = 0
+        while (finalConfigs.size < minTarget && attempt < 3 && untested.isNotEmpty()) {
+            attempt++
 
-                newConfigs.forEach { config ->
-                    if (isDuplicate(config)) {
-                        Log.d(TAG, "Config Duplicate: ${config.remarks}")
-                    } else {
-                        configs.add(config)
-                    }
-                }
-            }
-            Log.d(TAG, "configs.size: ${configs.size}")
+            val neededTcp = (minTarget * 10 - tcpPassed.size).coerceAtLeast(1)
+            val tcpResult = testTcpConfigs(untested, neededTcp)
+            tcpPassed.addAll(tcpResult.passed)
+            untested = untested.filterNot { it in tcpResult.passed || it in tcpResult.failed }
 
-            if (tcpConfigs.size < count * 10 && configs.isNotEmpty()) {
-                val neededTcp = (count * 10 - tcpConfigs.size).coerceAtLeast(1)
-                val newTcpConfigs = testTcpConfigs(configs, neededTcp)
+            if (tcpPassed.isEmpty()) break
 
-                tcpConfigs.addAll(newTcpConfigs.passed)
-                tcpFailed.addAll(newTcpConfigs.failed)
-                configs.removeAll(newTcpConfigs.passed)
-                configs.removeAll(newTcpConfigs.failed)
-                Log.d(TAG, "tcpConfigs.size: ${tcpConfigs.size}")
-            }
+            val neededReal = (minTarget - finalConfigs.size).coerceAtLeast(1)
+            val realResult = testRealDelayConfigs(tcpPassed, neededReal)
+            finalConfigs.addAll(realResult.passed)
+            tcpPassed = tcpPassed.filterNot { it in realResult.passed || it in realResult.failed }.toMutableList()
 
-            val neededReal = (count - finalConfigs.size).coerceAtLeast(1)
-            val realConfigs = testRealDelayConfigs(tcpConfigs, neededReal)
-
-            finalConfigs.addAll(realConfigs.passed)
-            realFailed.addAll(realConfigs.failed)
-            tcpConfigs.removeAll(realConfigs.passed)
-            tcpConfigs.removeAll(realConfigs.failed)
-            Log.d(TAG, "finalConfigs.size: ${finalConfigs.size}")
-
+            if (finalConfigs.isEmpty()) break
         }
 
-        return finalConfigs
+        Log.d(TAG, "Final configs found: ${finalConfigs.size}")
+        return finalConfigs.sortedBy { it.latency }.take(count)
     }
 
     suspend fun testRealDelayConfigs(
@@ -107,35 +102,32 @@ class ConfigProvider {
     ): TestResult {
         val realConfigs = mutableListOf<ProfileItem>()
         val realFailed = mutableListOf<ProfileItem>()
-        val semaphore = Semaphore(MAX_REAL_PING_THREADS)
         val mutex = Mutex()
         try {
             coroutineScope {
                 for (config in configs) {
                     launch(Dispatchers.IO) {
-                        semaphore.withPermit {
-                            val ping = ConfigTester.realPing(config)
+                        val ping = ConfigTester.realPing(config)
 
-                            val shouldCancel = mutex.withLock {
-                                if (ping == -1L) {
-                                    realFailed.add(config)
-                                    false
-                                } else if (realConfigs.size >= count) {
-                                    true
-                                } else {
-                                    realConfigs.add(config)
-                                    Log.i(
-                                        TAG,
-                                        "Added config: ${config.remarks} with ping: $ping to tcpConfigs"
-                                    )
-                                    Log.i(TAG, "RealConfigs.Size: ${realConfigs.size}")
-                                    realConfigs.size >= count
-                                }
+                        val shouldCancel = mutex.withLock {
+                            if (ping == -1L) {
+                                realFailed.add(config)
+                                false
+                            } else if (realConfigs.size >= count) {
+                                true
+                            } else {
+                                realConfigs.add(config.copy(latency = ping))
+                                Log.i(
+                                    TAG,
+                                    "Added config: ${config.remarks} with ping: $ping to tcpConfigs"
+                                )
+                                Log.i(TAG, "RealConfigs.Size: ${realConfigs.size}")
+                                realConfigs.size >= count
                             }
+                        }
 
-                            if (shouldCancel) {
-                                this@coroutineScope.cancel()
-                            }
+                        if (shouldCancel) {
+                            this@coroutineScope.cancel()
                         }
                     }
                 }
@@ -194,31 +186,22 @@ class ConfigProvider {
         return TestResult(passed, failed)
     }
 
-    suspend fun getConfigsFromSources(): List<ProfileItem> {
-        val configs = mutableListOf<ProfileItem>()
-        withContext(Dispatchers.IO) {
-            for (provider in CONFIG_PROVIDERS) {
-                val request = Request.Builder().url(provider).build()
-
-                val response = client.newCall(request).execute().body.string()
-
-
-                val configsLine =
-                    response.trim().splitToSequence('\n').filter { it.isNotEmpty() }.toList()
-                        .shuffled()
-
-                for (config in configsLine) {
-//                    Log.i(TAG, "${configsLine.indexOf(config)}'s config is: $config")
-
-                    val profileItem = ConfigParser.parseToProfileItem(config)
-                    profileItem?.let { configs.add(it) }
-
-//                    Log.i(TAG, "ProfileItem: $profileItem")
+    suspend fun getConfigsFromSources(): List<ProfileItem> = withContext(Dispatchers.IO) {
+        coroutineScope {
+            CONFIG_PROVIDERS.map { provider ->
+                async {
+                    try {
+                        val request = Request.Builder().url(provider).build()
+                        val response = client.newCall(request).execute().body.string()
+                        response.trim().splitToSequence('\n')
+                            .filter { it.isNotEmpty() }.toList().shuffled()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to fetch from source: $provider", e)
+                        emptyList()
+                    }
                 }
-
-            }
+            }.awaitAll().flatten().mapNotNull { ConfigParser.parseToProfileItem(it) }
         }
-        return configs
     }
 
 }

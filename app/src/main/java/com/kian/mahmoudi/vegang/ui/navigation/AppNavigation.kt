@@ -79,6 +79,9 @@ fun HomeRoute(homeViewModel: HomeViewModel = hiltViewModel()) {
         onShareConfig = { homeViewModel.shareConfig(it) },
         onSelectConfig = { homeViewModel.selectConfig(it) },
         onConnectSelected = { homeViewModel.connectSelected() },
+        isFetchingConfigs = homeViewModel.isFetchingConfigs(),
+        isTestingConfigs = homeViewModel.isTestingConfigs(),
+        onCancelFetchingConfigs = { homeViewModel.cancelFetchingConfigs() }
     )
 
 }

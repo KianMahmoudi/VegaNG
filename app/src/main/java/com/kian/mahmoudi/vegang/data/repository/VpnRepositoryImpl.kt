@@ -39,7 +39,7 @@ class VpnRepositoryImpl @Inject constructor(@ApplicationContext private val cont
                     p1.getStringExtra(SERVICE_UPLOAD_TRAFFIC_BROADCAST_EXTRA) ?: "0 B"
                 val duration = p1.getStringExtra(SERVICE_DURATION_BROADCAST_EXTRA) ?: "00:00:00"
 
-                _traffic.value = TrafficInfo(trafficDownload, trafficUpload, duration)
+                _traffic.value = TrafficInfo(upload = trafficUpload, download = trafficDownload, duration = duration)
 
 
                 val connectionState = p1.getSerializableExtra(

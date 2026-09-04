@@ -30,6 +30,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import javax.inject.Inject
+import androidx.core.content.edit
+import kotlinx.coroutines.Job
 
 data class HomeUiState(
     val configs: List<ProfileItem> = emptyList(),
@@ -63,7 +65,12 @@ class HomeViewModel @Inject constructor(
 
     private var currentSort = ConfigSort.DEFAULT
 
+    private var fetchConfigJob: Job? = null
+
     val mutex = Mutex()
+
+    private var isFetchingConfigs = false
+    private var isTestingConfigs = false
 
     init {
         observeConfigs()
@@ -80,15 +87,29 @@ class HomeViewModel @Inject constructor(
 
                 }
                 .collect { configs ->
-                    _uiState.value = _uiState.value.copy(configs = configs)
+                    val savedId = prefs.getLong(KEY_SELECTED_CONFIG_ID, -1)
+                    val restored = configs.find { it.id == savedId }
+                    _uiState.value =
+                        _uiState.value.copy(configs = configs, selectedConfig = restored)
                 }
 
         }
     }
 
     fun getConfigs(count: Int) {
-        viewModelScope.launch {
+        fetchConfigJob = viewModelScope.launch {
+
+            if (vpnState.value != VpnState.DISCONNECTED) {
+                Toast.makeText(
+                    context, context.getString(R.string.cannot_get_configs_while_connected),
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@launch
+            }
+
+            isFetchingConfigs = true
             _uiState.value = _uiState.value.copy(loading = true, configLoading = true)
+
             try {
                 configRepository.getConfigs(count)
             } catch (e: Exception) {
@@ -98,12 +119,41 @@ class HomeViewModel @Inject constructor(
                     errorMessage = e.message ?: context.getString(R.string.unknown_error)
                 )
             } finally {
+                isFetchingConfigs = false
                 _uiState.value = _uiState.value.copy(loading = false, configLoading = false)
             }
         }
     }
 
+    fun cancelFetchingConfigs(){
+        fetchConfigJob?.cancel()
+        isFetchingConfigs = false
+        _uiState.value = _uiState.value.copy(loading = false, configLoading = false)
+    }
+
+    fun isFetchingConfigs(): Boolean = isFetchingConfigs
+    fun isTestingConfigs(): Boolean = isTestingConfigs
+
+    private val prefs = context.getSharedPreferences("vpn_prefs", Context.MODE_PRIVATE)
+    private val KEY_SELECTED_CONFIG_ID = "selected_config_id"
+
     fun connect(config: ProfileItem) {
+        if (isFetchingConfigs) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.cannot_connect_while_fetching),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        if (isTestingConfigs) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.cannot_connect_while_testing),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
         val json = com.kian.mahmoudi.vegang.data.config.ConfigParser.toV2rayJson(config)
         if (vpnRepository.isPrepared()) {
             vpnRepository.connect(json, config.remarks)
@@ -156,6 +206,7 @@ class HomeViewModel @Inject constructor(
             try {
                 if (uiState.value.selectedConfig?.id == config.id) {
                     _uiState.value = _uiState.value.copy(selectedConfig = null)
+                    prefs.edit { remove(KEY_SELECTED_CONFIG_ID) }
                 }
                 configRepository.deleteConfig(config)
             } catch (e: Exception) {
@@ -170,6 +221,7 @@ class HomeViewModel @Inject constructor(
 
     fun selectConfig(config: ProfileItem) {
         _uiState.value = _uiState.value.copy(selectedConfig = config)
+        prefs.edit { putLong(KEY_SELECTED_CONFIG_ID, config.id) }
     }
 
     fun connectSelected() {
@@ -207,10 +259,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             if (mutex.isLocked) return@launch
             mutex.withLock {
+                isTestingConfigs = true
                 _uiState.value = _uiState.value.copy(loading = true)
                 try {
                     configRepository.testAllConfigs()
                 } finally {
+                    isTestingConfigs = false
                     _uiState.value = _uiState.value.copy(loading = false)
                 }
             }
@@ -219,10 +273,12 @@ class HomeViewModel @Inject constructor(
 
     fun testConfig(config: ProfileItem) {
         viewModelScope.launch {
+            isTestingConfigs = true
             _uiState.value = _uiState.value.copy(loading = true)
             try {
                 configRepository.testConfig(config)
             } finally {
+                isTestingConfigs = false
                 _uiState.value = _uiState.value.copy(loading = false)
             }
         }

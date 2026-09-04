@@ -35,4 +35,9 @@
     <string name="connect">Connect</string>
     <string name="no_server_selected">No server selected</string>
     <string name="cannot_delete_connected_config">Cannot delete active connected config. Please disconnect first.</string>
+    <string name="cannot_get_configs_while_connected">Disconnect from VPN to fetch configs</string>
+    <string name="cannot_connect_while_fetching">Wait for configs to finish loading before connecting</string>
+    <string name="cannot_connect_while_testing">Wait for speed test to finish before connecting</string>
+    <string name="cancel">Cancel</string>
+    <string name="iran_server_warning">Iran server (No bypass)</string>
 </resources>

@@ -35,18 +35,22 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kian.mahmoudi.vegang.R
 import com.kian.mahmoudi.vegang.dto.ProfileItem
+import com.kian.mahmoudi.vegang.enums.VpnState
 
 @Composable
 fun ConfigCard(
     config: ProfileItem,
     latencyMs: Long? = null,
     isSelected: Boolean = false,
+    isTestingConfigs: Boolean,
     onConnect: (ProfileItem) -> Unit,
+    isVpnConnected: Boolean,
     onTest: () -> Unit = {},
     onCopy: () -> Unit = {},
     onDelete: () -> Unit = {},
@@ -54,6 +58,10 @@ fun ConfigCard(
 ) {
 
     val primaryColor = MaterialTheme.colorScheme.primary
+
+    val isIranServer = config.remarks.contains("🇮🇷") ||
+            config.remarks.contains("Iran", ignoreCase = true) ||
+            config.remarks.contains(" IR-")
 
     OutlinedCard(
         modifier = Modifier
@@ -93,6 +101,7 @@ fun ConfigCard(
                     text = config.remarks.ifBlank { "Unnamed" },
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
+                    fontFamily = FontFamily.Default,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
@@ -103,6 +112,23 @@ fun ConfigCard(
             }
 
             Spacer(Modifier.height(6.dp))
+
+            if (isIranServer) {
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.iran_server_warning),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+            }
 
             // ── Row 2: Server info ──
             Row(
@@ -143,10 +169,21 @@ fun ConfigCard(
                     MiniChip(config.flow ?: "none")
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                    IconBtn(Icons.Rounded.WifiTethering, stringResource(R.string.test), onTest)
-                    IconBtn(Icons.Rounded.ContentCopy, stringResource(R.string.copy), onCopy)
-                    IconBtn(Icons.Rounded.Delete, stringResource(R.string.delete), onDelete, true)
-                    IconBtn(Icons.Rounded.Share, stringResource(R.string.share), onShare)
+                    IconBtn(
+                        Icons.Rounded.WifiTethering,
+                        stringResource(R.string.test),
+                        onTest,
+                        enabled = !isTestingConfigs && !isVpnConnected,
+                    )
+                    IconBtn(
+                        Icons.Rounded.ContentCopy, stringResource(R.string.copy), onCopy,
+                    )
+                    IconBtn(
+                        Icons.Rounded.Delete, stringResource(R.string.delete), onDelete, true,
+                    )
+                    IconBtn(
+                        Icons.Rounded.Share, stringResource(R.string.share), onShare,
+                    )
                 }
             }
         }
@@ -232,11 +269,13 @@ private fun IconBtn(
     icon: ImageVector,
     desc: String,
     onClick: () -> Unit,
-    destructive: Boolean = false
+    destructive: Boolean = false,
+    enabled: Boolean = true,
 ) {
     IconButton(
         onClick = onClick,
         modifier = Modifier.size(30.dp),
+        enabled = enabled,
         colors = IconButtonDefaults.iconButtonColors(contentColor = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant)
     ) {
         Icon(icon, desc, modifier = Modifier.size(16.dp))

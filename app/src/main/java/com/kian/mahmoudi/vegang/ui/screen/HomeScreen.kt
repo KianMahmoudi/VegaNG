@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Cancel
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Shield
@@ -40,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,6 +63,9 @@ fun HomeScreen(
     uiState: HomeUiState,
     vpnState: VpnState,
     traffic: TrafficInfo,
+    isFetchingConfigs: Boolean,
+    isTestingConfigs: Boolean,
+    onDeleteNonWorking: () -> Unit,
     onSelectConfig: (ProfileItem) -> Unit,
     onConnectSelected: () -> Unit,
     onDisconnect: () -> Unit,
@@ -71,7 +76,7 @@ fun HomeScreen(
     onCopyConfig: (ProfileItem) -> Unit,
     onDeleteConfig: (ProfileItem) -> Unit,
     onShareConfig: (ProfileItem) -> Unit,
-    onDeleteNonWorking: () -> Unit
+    onCancelFetchingConfigs: () -> Unit,
 ) {
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -110,14 +115,15 @@ fun HomeScreen(
                     vpnState = vpnState,
                     selectedConfig = uiState.selectedConfig,
                     onConnectClick = onConnectSelected,
-                    onDisconnectClick = onDisconnect
+                    onDisconnectClick = onDisconnect,
+                    isBusy = isTestingConfigs || isFetchingConfigs
                 )
 
                 Box(modifier = Modifier.weight(1f)) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Column() {
                             if (uiState.configLoading) {
-                                FetchingConfigsBanner()
+                                FetchingConfigsBanner(onCancel = onCancelFetchingConfigs)
                             }
                             LazyColumn(modifier = Modifier.weight(1f)) {
                                 items(uiState.configs) { config ->
@@ -132,7 +138,9 @@ fun HomeScreen(
                                         },
                                         onCopy = { onCopyConfig(config) },
                                         onDelete = { onDeleteConfig(config) },
-                                        onShare = { onShareConfig(config) }
+                                        onShare = { onShareConfig(config) },
+                                        isTestingConfigs = isTestingConfigs,
+                                        isVpnConnected = vpnState == VpnState.CONNECTED
                                     )
                                 }
                             }
@@ -142,7 +150,8 @@ fun HomeScreen(
                                 onSort = onSortConfigs,
                                 onDeleteFailed = onDeleteNonWorking,
                                 loading = uiState.loading,
-                                modifier = Modifier
+                                modifier = Modifier,
+                                vpnState = vpnState
                             )
                         }
                     }
@@ -308,6 +317,7 @@ fun ActionBar(
     onTestAll: () -> Unit,
     onSort: () -> Unit,
     onDeleteFailed: () -> Unit,
+    vpnState: VpnState,
     loading: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -321,14 +331,14 @@ fun ActionBar(
             icon = Icons.Rounded.CloudDownload,
             label = stringResource(R.string.get),
             onClick = onGetConfigs,
-            enabled = !loading,
+            enabled = !loading && vpnState == VpnState.DISCONNECTED,
             modifier = Modifier.weight(1f)
         )
         ActionChip(
             icon = Icons.Rounded.Speed,
             label = stringResource(R.string.test),
             onClick = onTestAll,
-            enabled = !loading,
+            enabled = !loading && vpnState == VpnState.DISCONNECTED,
             modifier = Modifier.weight(1f)
         )
         ActionChip(
@@ -388,12 +398,13 @@ fun ActionChip(
 fun ConnectButton(
     vpnState: VpnState,
     selectedConfig: ProfileItem?,
+    isBusy: Boolean,
     onConnectClick: () -> Unit,
     onDisconnectClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val accentColor = vpnStateAccent(vpnState)
-    val isEnabled = selectedConfig != null || vpnState != VpnState.DISCONNECTED
+    val isEnabled = (selectedConfig != null || vpnState != VpnState.DISCONNECTED) && !isBusy
 
     Column(
         modifier = modifier
@@ -403,7 +414,6 @@ fun ConnectButton(
         verticalArrangement = Arrangement.Center
     ) {
 
-        // دکمه دایره‌ای بزرگ (140dp)
         OutlinedCard(
             onClick = {
                 if (vpnState == VpnState.DISCONNECTED) {
@@ -480,7 +490,10 @@ fun ConnectButton(
 }
 
 @Composable
-fun FetchingConfigsBanner(modifier: Modifier = Modifier) {
+fun FetchingConfigsBanner(
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -491,8 +504,7 @@ fun FetchingConfigsBanner(modifier: Modifier = Modifier) {
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically
         ) {
             CircularProgressIndicator(
                 modifier = Modifier.size(16.dp),
@@ -504,8 +516,16 @@ fun FetchingConfigsBanner(modifier: Modifier = Modifier) {
                 text = stringResource(R.string.loading_configs),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onCancel) {
+                Icon(
+                    imageVector = Icons.Rounded.Close,
+                    contentDescription = stringResource(R.string.cancel),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }

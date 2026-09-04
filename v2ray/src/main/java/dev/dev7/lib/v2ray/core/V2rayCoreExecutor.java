@@ -167,10 +167,12 @@ public class V2rayCoreExecutor {
                     "        \"domain:googleapis.cn\": \"googleapis.com\"\n" +
                     "    },\n" +
                     "    \"servers\": [\n" +
-                    "        \"1.1.1.1\"\n" +
+                    "        \"1.1.1.1\",\n" +
+                    "        \"8.8.8.8\"\n" +
                     "    ]\n" +
                     "}"));
-            return Libv2ray.measureOutboundDelay(config_json.toString(), "http://www.gstatic.com/generate_204");
+            Libv2ray.testConfig(config_json.toString());
+            return Libv2ray.measureOutboundDelay(config_json.toString(), "https://www.cloudflare.com/cdn-cgi/trace");
         } catch (Exception json_error) {
             Log.d(V2rayCoreExecutor.class.getSimpleName(), "getCurrentServerDelay -> ", json_error);
             return -1;

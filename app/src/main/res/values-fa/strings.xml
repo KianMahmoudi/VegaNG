@@ -36,4 +36,9 @@
     <string name="connect">اتصال</string>
     <string name="no_server_selected">سروری انتخاب نشده است</string>
     <string name="cannot_delete_connected_config">امکان حذف کانفیگ در حال استفاده وجود ندارد. ابتدا اتصال را قطع کنید.</string>
+    <string name="cannot_get_configs_while_connected">برای دریافت کانفیگ‌ها، ابتدا از وی‌پی‌ان قطع شوید</string>
+    <string name="cannot_connect_while_fetching">ابتدا صبر کنید تا دریافت کانفیگ‌ها تمام شود</string>
+    <string name="cannot_connect_while_testing">ابتدا صبر کنید تا تست پینگ تمام شود</string>
+    <string name="cancel">لغو</string>
+    <string name="iran_server_warning">سرور ایران (عدم دورزدن فیلترینگ)</string>
 </resources>
