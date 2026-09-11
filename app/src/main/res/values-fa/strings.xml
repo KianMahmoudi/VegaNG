@@ -41,4 +41,14 @@
     <string name="cannot_connect_while_testing">ابتدا صبر کنید تا تست پینگ تمام شود</string>
     <string name="cancel">لغو</string>
     <string name="iran_server_warning">سرور ایران (عدم دورزدن فیلترینگ)</string>
+    <string name="fetch_stage_downloading">در حال دریافت کانفیگ‌ها از سرورها...</string>
+    <string name="fetch_stage_tcp">بررسی دسترسی سرورها...</string>
+    <string name="fetch_stage_realping">اندازه‌گیری پینگ واقعی...</string>
+    <string name="fetch_stage_geo">شناسایی موقعیت جغرافیایی سرورها...</string>
+    <string name="fetch_stage_done">%1$d کانفیگ سالم پیدا شد</string>
+    <string name="fetch_attempt">تلاش %1$d از %2$d —</string>
+    <string name="fetch_stat_fetched">%1$d کانفیگ دریافت شد</string>
+    <string name="fetch_stat_responding">%1$d پاسخگو</string>
+    <string name="fetch_stat_tested">%1$d تست شد</string>
+    <string name="fetch_stat_healthy">%1$d سالم</string>
 </resources>

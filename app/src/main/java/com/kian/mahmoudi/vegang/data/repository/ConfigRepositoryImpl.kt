@@ -3,13 +3,17 @@ package com.kian.mahmoudi.vegang.data.repository
 import com.kian.mahmoudi.vegang.dto.ProfileItem
 import com.kian.mahmoudi.vegang.data.config.ConfigProvider
 import com.kian.mahmoudi.vegang.data.config.ConfigTester
+import com.kian.mahmoudi.vegang.data.config.FetchStage
+import com.kian.mahmoudi.vegang.data.config.FetchStatus
 import com.kian.mahmoudi.vegang.data.config.GeoLocator
 import com.kian.mahmoudi.vegang.data.database.dao.ConfigDao
 import com.kian.mahmoudi.vegang.data.database.mapper.ConfigMapper
 import com.kian.mahmoudi.vegang.enums.ConfigSort
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -22,6 +26,8 @@ class ConfigRepositoryImpl @Inject constructor(
 ) :
     ConfigRepository {
 
+    override val fetchStatus: StateFlow<FetchStatus> = configProvider.fetchStatus
+
     private val pingSemaphore = Semaphore(15)
 
     override suspend fun getConfigs(count: Int) {
@@ -33,12 +39,22 @@ class ConfigRepositoryImpl @Inject constructor(
             )
         })
 
+        configProvider.fetchStatus.update { it.copy(stage = FetchStage.GeoLocating) }
+
         val addresses = remoteConfigs.map { it.server ?: "" }
         val locations = GeoLocator.locateServers(addresses)
         val finalConfigs = GeoLocator.buildLocationRemarks(remoteConfigs, locations)
 
         val entities = configMapper.toEntityList(finalConfigs)
         configDao.upsertConfigs(entities)
+
+        configProvider.fetchStatus.update {
+            it.copy(stage = FetchStage.Done, healthy = finalConfigs.size)
+        }
+    }
+
+    override fun resetFetchStatus() {
+        configProvider.fetchStatus.value = FetchStatus()
     }
 
     override fun observeConfigs(configSort: ConfigSort): Flow<List<ProfileItem>> {
@@ -99,4 +115,3 @@ class ConfigRepositoryImpl @Inject constructor(
     }
 
 }
-

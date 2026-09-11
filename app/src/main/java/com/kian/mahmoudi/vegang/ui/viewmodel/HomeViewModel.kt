@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.kian.mahmoudi.vegang.R
 import com.kian.mahmoudi.vegang.data.config.ConfigParser
+import com.kian.mahmoudi.vegang.data.config.FetchStatus
 import com.kian.mahmoudi.vegang.data.repository.ConfigRepository
 import com.kian.mahmoudi.vegang.data.repository.VpnRepository
 import com.kian.mahmoudi.vegang.dto.ProfileItem
@@ -23,6 +24,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
@@ -62,6 +64,8 @@ class HomeViewModel @Inject constructor(
     val vpnState: StateFlow<VpnState> = vpnRepository.state
 
     val traffic: StateFlow<TrafficInfo> = vpnRepository.traffic
+
+    val fetchStatus: StateFlow<FetchStatus> = configRepository.fetchStatus
 
     private var currentSort = ConfigSort.DEFAULT
 
@@ -121,6 +125,10 @@ class HomeViewModel @Inject constructor(
             } finally {
                 isFetchingConfigs = false
                 _uiState.value = _uiState.value.copy(loading = false, configLoading = false)
+                viewModelScope.launch {
+                    delay(2000)
+                    configRepository.resetFetchStatus()
+                }
             }
         }
     }
@@ -128,6 +136,7 @@ class HomeViewModel @Inject constructor(
     fun cancelFetchingConfigs(){
         fetchConfigJob?.cancel()
         isFetchingConfigs = false
+        configRepository.resetFetchStatus()
         _uiState.value = _uiState.value.copy(loading = false, configLoading = false)
     }
 

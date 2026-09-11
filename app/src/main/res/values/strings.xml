@@ -40,4 +40,14 @@
     <string name="cannot_connect_while_testing">Wait for speed test to finish before connecting</string>
     <string name="cancel">Cancel</string>
     <string name="iran_server_warning">Iran server (No bypass)</string>
+    <string name="fetch_stage_downloading">Fetching configs from servers...</string>
+    <string name="fetch_stage_tcp">Checking server availability...</string>
+    <string name="fetch_stage_realping">Measuring real latency...</string>
+    <string name="fetch_stage_geo">Locating servers...</string>
+    <string name="fetch_stage_done">%1$d healthy configs found</string>
+    <string name="fetch_attempt">Attempt %1$d of %2$d —</string>
+    <string name="fetch_stat_fetched">%1$d configs fetched</string>
+    <string name="fetch_stat_responding">%1$d responding</string>
+    <string name="fetch_stat_tested">%1$d tested</string>
+    <string name="fetch_stat_healthy">%1$d healthy</string>
 </resources>

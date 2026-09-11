@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Cancel
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -52,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kian.mahmoudi.vegang.R
+import com.kian.mahmoudi.vegang.data.config.FetchStage
+import com.kian.mahmoudi.vegang.data.config.FetchStatus
 import com.kian.mahmoudi.vegang.dto.ProfileItem
 import com.kian.mahmoudi.vegang.enums.TrafficInfo
 import com.kian.mahmoudi.vegang.enums.VpnState
@@ -65,6 +68,7 @@ fun HomeScreen(
     traffic: TrafficInfo,
     isFetchingConfigs: Boolean,
     isTestingConfigs: Boolean,
+    fetchStatus: FetchStatus,
     onDeleteNonWorking: () -> Unit,
     onSelectConfig: (ProfileItem) -> Unit,
     onConnectSelected: () -> Unit,
@@ -99,7 +103,7 @@ fun HomeScreen(
                     isLoading = uiState.loading || uiState.configLoading,
                 )
             } else {
-                if ((uiState.loading || uiState.configLoading) && uiState.configs.isNotEmpty()) {
+                if (uiState.loading || uiState.configLoading) {
                     LinearProgressIndicator(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -122,8 +126,11 @@ fun HomeScreen(
                 Box(modifier = Modifier.weight(1f)) {
                     Column(modifier = Modifier.fillMaxSize()) {
                         Column() {
-                            if (uiState.configLoading) {
-                                FetchingConfigsBanner(onCancel = onCancelFetchingConfigs)
+                            if (uiState.configLoading || fetchStatus.stage == FetchStage.Done) {
+                                FetchingConfigsBanner(
+                                    status = fetchStatus,
+                                    onCancel = onCancelFetchingConfigs
+                                )
                             }
                             LazyColumn(modifier = Modifier.weight(1f)) {
                                 items(uiState.configs) { config ->
@@ -491,9 +498,11 @@ fun ConnectButton(
 
 @Composable
 fun FetchingConfigsBanner(
+    status: FetchStatus,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isDone = status.stage == FetchStage.Done
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -506,28 +515,92 @@ fun FetchingConfigsBanner(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(16.dp),
-                color = MaterialTheme.colorScheme.primary,
-                strokeWidth = 2.dp
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.loading_configs),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.weight(1f)
-            )
-            IconButton(onClick = onCancel) {
+            if (isDone) {
                 Icon(
-                    imageVector = Icons.Rounded.Close,
-                    contentDescription = stringResource(R.string.cancel),
-                    tint = MaterialTheme.colorScheme.primary
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 )
+            } else {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 2.dp
+                )
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stageTitle(status),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Medium
+                )
+                val stats = statsLine(status)
+                if (stats.isNotBlank()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = stats,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            if (!isDone) {
+                IconButton(onClick = onCancel, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.cancel),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun stageTitle(status: FetchStatus): String {
+    val isRetryWave = status.attempt > 1 &&
+            (status.stage == FetchStage.TcpTesting || status.stage == FetchStage.RealPinging)
+
+    val base = when (status.stage) {
+        FetchStage.Downloading -> stringResource(R.string.fetch_stage_downloading)
+        FetchStage.TcpTesting -> stringResource(R.string.fetch_stage_tcp)
+        FetchStage.RealPinging -> stringResource(R.string.fetch_stage_realping)
+        FetchStage.GeoLocating -> stringResource(R.string.fetch_stage_geo)
+        FetchStage.Done -> stringResource(R.string.fetch_stage_done, status.healthy)
+        FetchStage.Idle -> ""
+    }
+
+    return if (isRetryWave) {
+        "${stringResource(R.string.fetch_attempt, status.attempt, status.maxAttempts)} $base"
+    } else {
+        base
+    }
+}
+
+@Composable
+private fun statsLine(status: FetchStatus): String = when (status.stage) {
+    FetchStage.Downloading -> ""
+    FetchStage.TcpTesting -> {
+        val parts = mutableListOf(
+            stringResource(R.string.fetch_stat_fetched, status.totalFetched)
+        )
+        if (status.tcpPassed > 0) {
+            parts.add(stringResource(R.string.fetch_stat_responding, status.tcpPassed))
+        }
+        parts.joinToString(" · ")
+    }
+    FetchStage.RealPinging -> listOf(
+        stringResource(R.string.fetch_stat_responding, status.tcpPassed),
+        stringResource(R.string.fetch_stat_tested, status.tested),
+        stringResource(R.string.fetch_stat_healthy, status.healthy)
+    ).joinToString(" · ")
+    FetchStage.GeoLocating -> stringResource(R.string.fetch_stat_healthy, status.healthy)
+    FetchStage.Done -> ""
+    FetchStage.Idle -> ""
 }
 
 @Composable

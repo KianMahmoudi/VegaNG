@@ -42,6 +42,7 @@ fun HomeRoute(homeViewModel: HomeViewModel = hiltViewModel()) {
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val vpnState by homeViewModel.vpnState.collectAsStateWithLifecycle()
     val traffic by homeViewModel.traffic.collectAsStateWithLifecycle()
+    val fetchStatus by homeViewModel.fetchStatus.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -81,6 +82,7 @@ fun HomeRoute(homeViewModel: HomeViewModel = hiltViewModel()) {
         onConnectSelected = { homeViewModel.connectSelected() },
         isFetchingConfigs = homeViewModel.isFetchingConfigs(),
         isTestingConfigs = homeViewModel.isTestingConfigs(),
+        fetchStatus = fetchStatus,
         onCancelFetchingConfigs = { homeViewModel.cancelFetchingConfigs() }
     )
 

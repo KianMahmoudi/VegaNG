@@ -8,6 +8,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -54,6 +56,8 @@ class ConfigProvider {
         .readTimeout(5, TimeUnit.SECONDS)
         .build()
 
+    val fetchStatus = MutableStateFlow(FetchStatus())
+
     suspend fun getConfigs(
         count: Int,
         isDuplicate: suspend (ProfileItem) -> Boolean
@@ -61,11 +65,16 @@ class ConfigProvider {
 
         val minTarget = maxOf(count, 5)
 
+        fetchStatus.value = FetchStatus(stage = FetchStage.Downloading)
         val allConfigs = getConfigsFromSources()
             .filterNot { isDuplicate(it) }
             .shuffled()
 
-        if (allConfigs.isEmpty()) return emptyList()
+        if (allConfigs.isEmpty()) {
+            fetchStatus.value = FetchStatus(stage = FetchStage.Done, healthy = 0)
+            return emptyList()
+        }
+        fetchStatus.update { it.copy(totalFetched = allConfigs.size) }
         Log.d(TAG, "Total unique configs from sources: ${allConfigs.size}")
 
         val finalConfigs = mutableListOf<ProfileItem>()
@@ -76,6 +85,9 @@ class ConfigProvider {
         var attempt = 0
         while (finalConfigs.size < minTarget && attempt < 3 && untested.isNotEmpty()) {
             attempt++
+            fetchStatus.update {
+                it.copy(stage = FetchStage.TcpTesting, attempt = attempt, tested = 0)
+            }
 
             val neededTcp = (minTarget * 10 - tcpPassed.size).coerceAtLeast(1)
             val tcpResult = testTcpConfigs(untested, neededTcp)
@@ -84,10 +96,14 @@ class ConfigProvider {
 
             if (tcpPassed.isEmpty()) break
 
+            fetchStatus.update { it.copy(stage = FetchStage.RealPinging) }
+
             val neededReal = (minTarget - finalConfigs.size).coerceAtLeast(1)
             val realResult = testRealDelayConfigs(tcpPassed, neededReal)
             finalConfigs.addAll(realResult.passed)
             tcpPassed = tcpPassed.filterNot { it in realResult.passed || it in realResult.failed }.toMutableList()
+
+            fetchStatus.update { it.copy(healthy = finalConfigs.size) }
 
             if (finalConfigs.isEmpty()) break
         }
@@ -108,6 +124,7 @@ class ConfigProvider {
                 for (config in configs) {
                     launch(Dispatchers.IO) {
                         val ping = ConfigTester.realPing(config)
+                        fetchStatus.update { it.copy(tested = it.tested + 1) }
 
                         val shouldCancel = mutex.withLock {
                             if (ping == -1L) {
@@ -117,6 +134,7 @@ class ConfigProvider {
                                 true
                             } else {
                                 realConfigs.add(config.copy(latency = ping))
+                                fetchStatus.update { it.copy(healthy = it.healthy + 1) }
                                 Log.i(
                                     TAG,
                                     "Added config: ${config.remarks} with ping: $ping to tcpConfigs"
@@ -162,6 +180,7 @@ class ConfigProvider {
                                     true
                                 } else {
                                     passed.add(config)
+                                    fetchStatus.update { it.copy(tcpPassed = it.tcpPassed + 1) }
                                     Log.i(
                                         TAG,
                                         "Added config: ${config.remarks} with ping: $ping to tcpConfigs"
